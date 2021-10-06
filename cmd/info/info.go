@@ -1,4 +1,4 @@
-package config
+package info
 
 // All the needed server information.
 const (
