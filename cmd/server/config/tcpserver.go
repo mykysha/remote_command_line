@@ -16,7 +16,7 @@ type Server struct {
 	listener net.Listener
 }
 
-// Init starts Server work
+// Init starts Server work.
 func (srv Server) Init() {
 	addr := fmt.Sprintf("%s:%s", srv.Host, srv.Port)
 
