@@ -65,6 +65,11 @@ h
 who
 ```
 
+* Exit client:
+```
+STOP
+```
+
 ## Useful makefile commands:
 
 To build for windows-amd64 run... (creates folder in bin/win)

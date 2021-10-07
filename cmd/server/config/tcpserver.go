@@ -36,7 +36,7 @@ func (srv Server) Init() {
 		}
 	}(srv.listener)
 
-	log.Printf("listening on %s", addr)
+	log.Printf("server is running")
 
 	logFile, err := os.Create("log/server/serverLog.txt")
 	if err != nil {
@@ -50,6 +50,8 @@ func (srv Server) Init() {
 		Log:      logger,
 		Listener: srv.listener,
 	}
+
+	logger.Println("listening on ", addr)
 
 	a.Init()
 }

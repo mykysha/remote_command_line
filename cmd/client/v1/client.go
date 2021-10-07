@@ -17,6 +17,7 @@ type Client struct {
 	bufSize int
 	writer  *bufio.Writer
 	reader  *bufio.Reader
+	scanner *bufio.Scanner
 	Log     *log.Logger
 }
 
@@ -47,12 +48,21 @@ func (c *Client) Init() {
 
 // communicator manages TCP communication.
 func (c Client) communicator() error {
+	err := c.fileCheck()
+	if err == nil {
+		err = c.fileHandler()
+		if err != nil {
+			return fmt.Errorf("communicator: %w", err)
+		}
+
+		return nil
+	}
+	c.Log.Println(err)
+
 	for {
 		end, err := c.clReader()
 		if err != nil {
-			err = fmt.Errorf("communicator: %w", err)
-
-			return err
+			return fmt.Errorf("communicator: %w", err)
 		}
 
 		if end {
@@ -61,9 +71,16 @@ func (c Client) communicator() error {
 
 		err = c.serverReader()
 		if err != nil {
-			err = fmt.Errorf("communicator: %w", err)
-
-			return err
+			return fmt.Errorf("communicator: %w", err)
 		}
 	}
+}
+
+// fileHandler manages reading commands from file.
+func (c Client) fileHandler() error {
+	if err := c.fReader(); err != nil {
+		return fmt.Errorf("file handler: %w", err)
+	}
+
+	return nil
 }
