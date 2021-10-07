@@ -5,11 +5,12 @@ import (
 	"github.com/nndergunov/AOCKM_Lab1/cmd/server/config"
 )
 
-// main is Server app entry point.
+// main is server entry point.
 func main() {
 	Starter()
 }
 
+// Starter gives server all the needed information.
 func Starter() {
 	srv := config.Server{
 		Host: info.Host,

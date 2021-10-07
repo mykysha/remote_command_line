@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
 	"strconv"
-	"strings"
+
+	cline "github.com/nndergunov/AOCKM_Lab1/pkg"
 )
 
 type API struct {
@@ -13,10 +15,12 @@ type API struct {
 	Listener net.Listener
 }
 
+// Init starts API work.
 func (a API) Init() {
 	a.connecter()
 }
 
+// connecter manages new client connections.
 func (a API) connecter() {
 	for i := 1; i > 0; i++ {
 		clientName := "Client" + strconv.Itoa(i)
@@ -39,6 +43,7 @@ func (a API) connecter() {
 	}
 }
 
+// handler deals with one particular connection.
 func (a API) handler(conn net.Conn, name string) error {
 	defer func() {
 		a.Log.Println(name, " disconnected")
@@ -55,19 +60,19 @@ func (a API) handler(conn net.Conn, name string) error {
 			return err
 		}
 
-		a.Log.Print(name, " -> ", string(buf))
+		buf = bytes.Trim(buf, "\x00")
 
-		_, err = conn.Write([]byte("Message received."))
+		a.Log.Print("received:", name, " -> ", string(buf))
+
+		buf = cline.Route(string(buf))
+
+		_, err = conn.Write(buf)
 		if err != nil {
 			err = fmt.Errorf("error sending: %w", err)
 
 			return err
 		}
 
-		if strings.TrimSpace(string(buf)) == "STOP" {
-			a.Log.Println("Exiting TCP server!")
-
-			return nil
-		}
+		a.Log.Println("sent:\t", string(buf))
 	}
 }

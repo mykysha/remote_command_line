@@ -1,9 +1,11 @@
 package v1
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
+	"os"
 )
 
 type Client struct {
@@ -13,11 +15,16 @@ type Client struct {
 	addr    string
 	Type    string
 	bufSize int
+	writer  *bufio.Writer
+	reader  *bufio.Reader
 	Log     *log.Logger
 }
 
+// Init starts Client work.
 func (c *Client) Init() {
 	c.addr = fmt.Sprintf("%s:%s", c.Host, c.Port)
+	c.writer = bufio.NewWriter(os.Stdout)
+	c.reader = bufio.NewReader(os.Stdin)
 
 	conn, err := net.Dial(c.Type, c.addr)
 	if err != nil {
@@ -38,9 +45,10 @@ func (c *Client) Init() {
 	}
 }
 
+// communicator manages TCP communication.
 func (c Client) communicator() error {
 	for {
-		end, err := c.clToServer()
+		end, err := c.clReader()
 		if err != nil {
 			err = fmt.Errorf("communicator: %w", err)
 

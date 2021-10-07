@@ -1,6 +1,7 @@
 ### Project-specific ###
-#Ignore build files
+#Ignore build and log files
 bin
+*.txt
 
 ### Go ###
 # Binaries for programs and plugins

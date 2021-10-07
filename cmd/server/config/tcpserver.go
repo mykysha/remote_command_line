@@ -16,6 +16,7 @@ type Server struct {
 	listener net.Listener
 }
 
+// Init starts Server work
 func (srv Server) Init() {
 	addr := fmt.Sprintf("%s:%s", srv.Host, srv.Port)
 
@@ -37,7 +38,14 @@ func (srv Server) Init() {
 
 	log.Printf("listening on %s", addr)
 
-	logger := log.New(os.Stdout, "server ", log.LstdFlags)
+	logFile, err := os.Create("log/server/serverLog.txt")
+	if err != nil {
+		log.Println(err)
+
+		return
+	}
+
+	logger := log.New(logFile, "server ", log.LstdFlags)
 	a := &api.API{
 		Log:      logger,
 		Listener: srv.listener,

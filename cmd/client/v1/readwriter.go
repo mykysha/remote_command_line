@@ -1,53 +1,54 @@
 package v1
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
-	"os"
 )
 
-func (c Client) clToServer() (bool, error) {
+// clReader gets commands from command line.
+func (c Client) clReader() (bool, error) {
 	buf := make([]byte, c.bufSize)
 
-	writer := bufio.NewWriter(os.Stdout)
-	reader := bufio.NewReader(os.Stdin)
-
-	_, err := writer.WriteString(">> ")
+	_, err := c.writer.WriteString("\n>> ")
 	if err != nil {
-		err = fmt.Errorf("serverWriter: %w", err)
+		err = fmt.Errorf("clReader: %w", err)
 
 		return false, err
 	}
 
-	err = writer.Flush()
+	err = c.writer.Flush()
 	if err != nil {
-		err = fmt.Errorf("serverWriter: %w", err)
+		err = fmt.Errorf("clReader: %w", err)
 
 		return false, err
 	}
 
-	num, err := reader.Read(buf)
+	num, err := c.reader.Read(buf)
 	if err != nil {
-		err = fmt.Errorf("serverWriter: %w", err)
+		err = fmt.Errorf("clReader: %w", err)
 
 		return false, err
 	}
 
 	buf[num-1] = 0
 
-	err = c.checker(buf, num, writer)
+	err = c.limitChecker(buf, num)
 	if err != nil {
-		err = fmt.Errorf("serverWriter: %w", err)
+		err = fmt.Errorf("clReader: %w", err)
 
 		return false, err
 	}
+
+	buf = bytes.Trim(buf, "\x00")
 
 	err = c.serverWriter(buf)
 	if err != nil {
-		err = fmt.Errorf("communicator: %w", err)
+		err = fmt.Errorf("clReader: %w", err)
 
 		return false, err
 	}
+
+	c.Log.Println("sent:\t", string(buf))
 
 	if c.shutdown(buf) {
 		return true, nil
@@ -56,6 +57,7 @@ func (c Client) clToServer() (bool, error) {
 	return false, err
 }
 
+// serverWriter sends requests to the server.
 func (c Client) serverWriter(send []byte) error {
 	if _, err := c.conn.Write(send); err != nil {
 		err = fmt.Errorf("serverWriter: %w", err)
@@ -66,9 +68,9 @@ func (c Client) serverWriter(send []byte) error {
 	return nil
 }
 
+// serverReader gets responses from the server.
 func (c Client) serverReader() error {
-	bufSize := 256 // 1 header + 255 commands
-	receive := make([]byte, bufSize)
+	receive := make([]byte, c.bufSize)
 
 	if _, err := c.conn.Read(receive); err != nil {
 		err = fmt.Errorf("serverReader: %w", err)
@@ -76,49 +78,23 @@ func (c Client) serverReader() error {
 		return err
 	}
 
-	c.Log.Printf("received: %v", string(receive))
+	receive = bytes.Trim(receive, "\x00")
 
-	return nil
-}
+	c.Log.Println("received:", string(receive))
 
-func (c Client) checker(buf []byte, num int, writer *bufio.Writer) error {
-	if num >= c.bufSize {
-		c.Log.Println("message exceeds limit in ", c.bufSize)
+	_, err := c.writer.WriteString(string(receive))
+	if err != nil {
+		err = fmt.Errorf("serverReader: %w", err)
 
-		messTooLong := fmt.Sprintf(
-			"Your message is too long."+
-				"Only first %d bytes (%s) will be sent.", c.bufSize, string(buf))
+		return err
+	}
 
-		_, err := writer.WriteString(messTooLong)
-		if err != nil {
-			err = fmt.Errorf("serverWriter: %w", err)
+	err = c.writer.Flush()
+	if err != nil {
+		err = fmt.Errorf("serverReader: %w", err)
 
-			return err
-		}
-
-		err = writer.Flush()
-		if err != nil {
-			err = fmt.Errorf("serverWriter: %w", err)
-
-			return err
-		}
+		return err
 	}
 
 	return nil
-}
-
-func (c Client) shutdown(buf []byte) bool {
-	shutdownSign := make([]byte, c.bufSize)
-
-	shutString := "STOP"
-
-	_ = copy(shutdownSign, shutString)
-
-	if string(buf) == string(shutdownSign) {
-		c.Log.Println("TCP client shutting down...")
-
-		return true
-	}
-
-	return false
 }

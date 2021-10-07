@@ -8,12 +8,21 @@ import (
 	"github.com/nndergunov/AOCKM_Lab1/cmd/info"
 )
 
+// main is client entry point.
 func main() {
 	Starter()
 }
 
+// Starter gives client all the needed information.
 func Starter() {
-	logger := log.New(os.Stdout, "client ", log.LstdFlags)
+	logFile, err := os.Create("log/client/clientLog.txt")
+	if err != nil {
+		log.Println(err)
+
+		return
+	}
+
+	logger := log.New(logFile, "client ", log.LstdFlags)
 	c := v1.Client{
 		Host: info.Host,
 		Port: info.Port,
